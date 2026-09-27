@@ -1,0 +1,11 @@
+Account ID,Company Name,Domain
+ACC-00001,Snowflake,snowflake.com
+ACC-00002,Databricks,databricks.com
+ACC-00003,Fivetran,fivetran.com
+ACC-00004,dbt Labs,getdbt.com
+ACC-00005,Airbyte,airbyte.com
+ACC-00006,Hex,hex.tech
+ACC-00007,Sigma Computing,sigmacomputing.com
+ACC-00008,ThoughtSpot,thoughtspot.com
+ACC-00009,Monte Carlo,montecarlodata.com
+ACC-00010,Census,getcensus.com

@@ -1,0 +1,27 @@
+# secrets
+.env
+
+# python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+
+# generated data (a small sample is committed under docs/sample_data)
+data/seed/*.csv
+data/clay_imports/*.csv
+data/clay_exports/*.csv
+data/warehouse/*.duckdb
+data/warehouse/*.wal
+
+# dbt
+dbt/target/
+dbt/logs/
+dbt/dbt_packages/
+
+# os / editors
+.DS_Store
+.vscode/
+.idea/

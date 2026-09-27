@@ -1,0 +1,43 @@
+# Central config for the GTM Enrichment & Outbound Automation Framework.
+# All data produced by this project is SIMULATED. No real emails are ever sent.
+
+random_seed: 42
+
+paths:
+  seed_dir: data/seed
+  clay_import_dir: data/clay_imports
+  clay_export_dir: data/clay_exports
+  warehouse: data/warehouse/gtm.duckdb
+
+generation:
+  total_accounts: 500          # real-domain accounts + synthetic accounts
+  real_accounts_max: 120       # accounts drawn from src/generate/companies.py (Clay-eligible)
+  contacts_per_account:        # drawn uniformly in this range
+    min: 2
+    max: 6
+  engagement_lookback_days: 90
+  reference_date: "2026-09-27" # "today" for the simulation, keeps runs reproducible
+
+# Share of records that get a deliberate data-quality problem.
+# Every planted error is written to data/seed/planted_errors.csv so the
+# validation layer can later report "planted vs caught".
+error_injection:
+  duplicate_contacts: 0.05
+  missing_titles: 0.05
+  invalid_emails: 0.03
+  stale_records: 0.03
+  conflicting_industry: 0.02
+  orphan_contacts: 0.01
+
+clay:
+  # Clay free plan: 100 data credits / month, 200 rows per table.
+  # Keep each import file under this size.
+  batch_size: 100
+  # Map your Clay export column names -> our standard enrichment fields.
+  # Edit the left-hand side to match the column names in your Clay table.
+  column_map:
+    Domain: domain
+    Industry: industry
+    Employee Count: employee_count
+    Headquarters Country: hq_country
+    Founded Year: founded_year

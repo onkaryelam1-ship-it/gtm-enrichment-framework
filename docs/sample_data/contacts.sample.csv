@@ -1,0 +1,21 @@
+contact_id,account_id,first_name,last_name,email,title,source_updated_at
+CON-001165,ACC-00292,Howard,James,howard.james@ramirezbean.test,Sales Development Representative,2026-05-17
+CON-001383,ACC-00346,Sean,White,sean.white@kerrevans.test,,2026-05-28
+CON-001084,ACC-00272,Patrick,Evans,patrick.evans@ramirezstricklandandwash.test,"VP, Revenue Operations",2026-06-07
+CON-000995,ACC-00249,Sheila,Buckley,sheila.buckley@spencerlee.test,Finance Manager,2026-07-03
+CON-000255,ACC-00065,Luis,Owens,luis.owens@chime.test,Director of Sales,2026-07-24
+CON-001772,ACC-00442,Denise,Gonzalez,denise.gonzalez@martinezrichardsonandcur.test,Sales Manager,2026-09-10
+CON-001985,ACC-00496,Jenny,Stevens,jenny.stevens@boonellc.test,Director of Operations,2026-09-16
+CON-000006,ACC-00003,Julie,Lewis,julie.lewis@fivetran.test,Revenue Operations Manager,2026-07-02
+CON-001329,ACC-00334,Derek,Myers,derek.myers@ericksonandsons.test,VP of Data,2026-05-16
+CON-001066,ACC-00267,Jessica,Walker,jessica.walker@schmidthansenandstewart.test,Sales Manager,2026-06-09
+CON-002069,ACC-00350,Zachayr,Bennett,zachary.bennett@arnoldandsons.test,Engineering Manager,2026-07-17
+CON-001803,ACC-00450,Donna,Lin,donna.lin@davisplc.test,  Engineering Manager ,2026-05-08
+CON-000356,ACC-00089,Justin,Hays,justin.hays@webflow.test,Revenue Operations Manager,2026-07-05
+CON-001437,ACC-00358,David,Munoz,david.munoz@larsonholloway.test,Growth Marketer,2026-09-01
+CON-000359,ACC-00090,Taylor,Lee,taylor.lee@contentful.test,Chief Marketing Officer,2026-05-19
+CON-001181,ACC-00296,Vanessa,Brown,vanessa.brown@williamsjohnsonandwright.test,Data Analyst,2026-07-25
+CON-001079,ACC-00270,Kelly,York,kelly.york@manninggroup.test,  Chief Revenue Officer ,2026-06-18
+CON-001651,ACC-00413,Thomas,Maldonado,thomas.maldonado@howardjordan.test,Director of Finance,2026-08-19
+CON-000501,ACC-00126,Renee,Rodriguez,renee.rodriguez@hendersonramirezandlewis.test,Head of RevOps,2026-08-19
+CON-001962,ACC-00490,Amanda,Clark,amanda.clark@watsonandersonandbrown.test,Revenue Operations Analyst,2026-05-05

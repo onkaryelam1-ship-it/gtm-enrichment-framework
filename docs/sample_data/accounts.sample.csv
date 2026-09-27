@@ -1,0 +1,21 @@
+account_id,company_name,domain,seed_industry,hq_country,is_real_domain,source,source_updated_at,sim_hiring_data_roles,sim_months_since_funding,sim_tech_stack_match
+ACC-00001,Snowflake,snowflake.com,Data & Analytics,US,True,public_list,2026-07-11,False,,False
+ACC-00002,Databricks,databricks.com,Data & Analytics,US,True,public_list,2026-07-28,True,8,True
+ACC-00003,Fivetran,fivetran.com,Data & Analytics,US,True,public_list,2026-06-15,False,,False
+ACC-00004,dbt Labs,getdbt.com,Data & Analytics,US,True,public_list,2026-07-13,False,,False
+ACC-00005,Airbyte,airbyte.com,Data & Analytics,US,True,public_list,2026-05-27,True,24,False
+ACC-00006,Hex,hex.tech,Data & Analytics,US,True,public_list,2026-05-29,False,,False
+ACC-00007,Sigma Computing,sigmacomputing.com,Data & Analytics,US,True,public_list,2026-09-06,False,,True
+ACC-00008,ThoughtSpot,thoughtspot.com,Data & Analytics,US,True,public_list,2026-05-05,True,,False
+ACC-00009,Monte Carlo,montecarlodata.com,Data & Analytics,US,True,public_list,2026-08-19,True,34,True
+ACC-00010,Census,getcensus.com,Data & Analytics,US,True,public_list,2026-08-05,False,,False
+ACC-00011,Hightouch,hightouch.com,Data & Analytics,US,True,public_list,2026-06-04,False,,False
+ACC-00012,Amplitude,amplitude.com,Data & Analytics,US,True,public_list,2026-06-02,False,36,False
+ACC-00013,Mixpanel,mixpanel.com,Data & Analytics,US,True,public_list,2026-07-10,False,,False
+ACC-00014,Heap,heap.io,Data & Analytics,US,True,public_list,2026-08-02,False,3,True
+ACC-00015,Alation,alation.com,Data & Analytics,US,True,public_list,2026-09-10,False,,False
+ACC-00016,Collibra,collibra.com,Data & Analytics,BE,True,public_list,2026-05-29,True,,False
+ACC-00017,Starburst,starburst.io,Data & Analytics,US,True,public_list,2026-06-11,False,25,False
+ACC-00018,Cockroach Labs,cockroachlabs.com,Data & Analytics,US,True,public_list,2026-06-22,False,,False
+ACC-00019,MongoDB,mongodb.com,Data & Analytics,US,True,public_list,2026-06-29,True,35,False
+ACC-00020,Confluent,confluent.io,Data & Analytics,US,True,public_list,2026-07-31,False,,False
