@@ -1,0 +1,41 @@
+provider_label,industry_bucket,is_primary,is_generic
+Software Development,Software,true,true
+Software Development,Developer Tools,false,true
+Software Development,Data & Analytics,false,true
+Software Development,Sales Tech,false,true
+Software Development,Marketing Tech,false,true
+Software Development,HR Tech,false,true
+Computer Software,Software,true,true
+Computer Software,Developer Tools,false,true
+Computer Software,Data & Analytics,false,true
+Computer Software,Sales Tech,false,true
+Computer Software,Marketing Tech,false,true
+Computer Software,HR Tech,false,true
+IT Services and IT Consulting,Developer Tools,true,true
+IT Services and IT Consulting,Software,false,true
+IT Services and IT Consulting,Data & Analytics,false,true
+Information Technology & Services,Software,true,true
+Information Technology & Services,Data & Analytics,false,true
+Information Technology & Services,Developer Tools,false,true
+"Technology, Information and Internet",Software,true,true
+"Technology, Information and Internet",Data & Analytics,false,true
+"Technology, Information and Internet",Fintech,false,true
+"Technology, Information and Internet",E-commerce & Retail,false,true
+"Technology, Information and Internet",Media,false,true
+Data Infrastructure and Analytics,Data & Analytics,true,false
+Computer and Network Security,Cybersecurity,true,false
+Financial Services,Fintech,true,false
+Banking,Fintech,true,false
+Hospitals and Health Care,Healthcare,true,false
+"Health, Wellness & Fitness",Healthcare,true,false
+Biotechnology Research,Healthcare,true,false
+Marketing Services,Marketing Tech,true,false
+Advertising Services,Marketing Tech,true,false
+Human Resources Services,HR Tech,true,false
+Staffing and Recruiting,HR Tech,true,false
+Retail,E-commerce & Retail,true,false
+Internet Marketplace Platforms,E-commerce & Retail,true,false
+"Transportation, Logistics, Supply Chain and Storage",Logistics,true,false
+Online Audio and Video Media,Media,true,false
+Entertainment Providers,Media,true,false
+Design Services,Software,true,false

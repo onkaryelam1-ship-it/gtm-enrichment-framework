@@ -7,3 +7,5 @@ requests>=2.31
 pytest>=8.0
 ruff>=0.5
 pytz>=2024.1
+dbt-core>=1.10
+dbt-duckdb>=1.9

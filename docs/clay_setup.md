@@ -51,10 +51,11 @@ line with 382. If you see "columns not found", fix `clay.column_map`.
 
 ## 4. Screenshots for the README
 
-Take two screenshots and save them in `docs/img/`:
+Save screenshots in `docs/img/` (already done for this project):
 
-- `clay_table.png`: the Clay table with enrichment columns filled
-- `clay_formula.png`: the `Domain Clean` formula column
+- `clay_enriched_table.png`: the Clay table with enrichment columns filled
+- `clay_enrichment_setup.png`: the Enrich company setup, keyed on Domain
+- `clay_fields.png`: the output fields selected
 
 ## Credits budget
 

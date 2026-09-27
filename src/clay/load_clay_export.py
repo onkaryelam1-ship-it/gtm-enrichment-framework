@@ -17,7 +17,9 @@ import pandas as pd
 
 from src.config import load_settings, path
 
-FIELDS = ["industry", "employee_count", "hq_country", "founded_year", "size_band", "description"]
+FIELDS = [
+    "industry", "employee_count", "hq_country", "founded_year", "size_band", "description", "matched_name",
+]
 
 
 def normalize_domain(d: str | float) -> str | None:
@@ -31,7 +33,8 @@ def normalize_domain(d: str | float) -> str | None:
 
 def read_export(f, column_map: dict) -> pd.DataFrame:
     df = pd.read_csv(f, dtype=str)
-    missing = [c for c in column_map if c not in df.columns]
+    optional = {"Enrich company", "Size", "Description"}  # not every provider returns these
+    missing = [c for c in column_map if c not in df.columns and c not in optional]
     if missing:
         print(f"  ! {f.name}: columns not found {missing}; edit clay.column_map in settings.yaml")
     df = df.rename(columns=column_map)

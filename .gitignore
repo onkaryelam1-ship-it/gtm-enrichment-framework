@@ -20,6 +20,8 @@ data/warehouse/*.wal
 dbt/target/
 dbt/logs/
 dbt/dbt_packages/
+dbt/.user.yml
+_sync.tgz
 
 # os / editors
 .DS_Store

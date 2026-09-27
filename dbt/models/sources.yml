@@ -1,0 +1,14 @@
+version: 2
+
+sources:
+  - name: raw
+    description: Untouched loads written by the Python pipeline (all columns are text).
+    schema: raw
+    tables:
+      - name: raw_accounts
+      - name: raw_contacts
+      - name: raw_engagement
+      - name: raw_clay_enrichment
+        description: Long format, one row per (account, field, provider).
+      - name: planted_errors
+        description: Manifest of every data-quality error injected by the generator.

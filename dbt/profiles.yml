@@ -1,0 +1,8 @@
+gtm_enrichment:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      # Same file the Python loaders write to; override with GTM_WAREHOUSE.
+      path: "{{ env_var('GTM_WAREHOUSE', 'data/warehouse/gtm.duckdb') }}"
+      threads: 4

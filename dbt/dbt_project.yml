@@ -1,0 +1,39 @@
+name: gtm_enrichment
+version: "1.0.0"
+config-version: 2
+profile: gtm_enrichment
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+test-paths: ["tests"]
+macro-paths: ["macros"]
+target-path: "target"
+clean-targets: ["target", "dbt_packages"]
+
+vars:
+  # Keep in sync with generation.reference_date in config/settings.yaml
+  reference_date: "2026-09-27"
+  stale_contact_days: 365       # contact record not updated in a year
+  stale_enrichment_days: 90     # enrichment older than a quarter gets re-enriched
+
+models:
+  gtm_enrichment:
+    staging:
+      +schema: staging
+      +materialized: view
+    intermediate:
+      +schema: intermediate
+      +materialized: table
+    marts:
+      +schema: marts
+      +materialized: table
+    quality:
+      +schema: quality
+      +materialized: table
+
+seeds:
+  gtm_enrichment:
+    +schema: ref
+
+flags:
+  send_anonymous_usage_stats: false

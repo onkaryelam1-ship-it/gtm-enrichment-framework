@@ -19,6 +19,32 @@ AI coding tools helped or got something wrong. These make strong interview stori
 - **Long-format enrichment table.** One row per (account, field, provider) makes it
   easy to compare providers and detect conflicts in SQL.
 
+## Week 2
+
+- **dbt on DuckDB.** Same SQL patterns as a Snowflake warehouse, runs locally with no
+  cost. `dbt build` runs models and tests together, so a failing check stops the run.
+- **Checks as models, not only tests.** Each check writes failing rows to
+  `quality.dq_failures` with an action (quarantine, merge, flag, refresh, review).
+  Tests say pass/fail; the failure table says what to do with each record.
+- **Quarantine vs flag.** Invalid emails and orphan contacts can't be used, so they're
+  removed from `dim_contact`. Missing titles and stale records are still usable, so
+  they stay with a flag.
+- **Exact dedup auto-merges, fuzzy dedup only flags.** Normalized-email matches are
+  safe to merge. Name-similarity matches can be two different people, so they go to
+  review.
+- **Survivor rule.** In a duplicate group, keep the record with a title, then the most
+  recently updated, then the lowest id.
+- **Industry: generic labels don't count as evidence.** A strict mapping caught more
+  planted conflicts but would have overwritten the correct industry of 9 real
+  companies. Chose precision over recall and reported both numbers.
+- **Country: seed wins.** The seed is a curated list; Clay said Snowflake is in GB.
+  Conflicts are logged, not silently resolved.
+- **Headcount vs size band: two thresholds.** 2-10x outside the band is a warning
+  (bands are self-reported and lag). 10x or more suggests the wrong company was
+  matched, which is how Chime / "Chime Workplace" was caught.
+- **Recall measured, not assumed.** Every planted error is joined back to the checks,
+  and a dbt test fails the build if a rule-based check misses one.
+
 ## AI tooling notes
 
 - _Add examples here: what Claude Code or Cursor produced, what you checked, and

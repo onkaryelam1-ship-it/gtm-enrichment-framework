@@ -1,0 +1,39 @@
+version: 2
+
+models:
+  - name: dim_account
+    description: One row per account with resolved firmographics and quality flags.
+    columns:
+      - name: account_id
+        data_tests: [unique, not_null]
+      - name: industry
+        data_tests: [not_null]
+      - name: enrichment_status
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ["clay", "mock", "missing"]
+  - name: dim_contact
+    description: Deduplicated, sendable contacts. Quarantined records are excluded.
+    columns:
+      - name: contact_id
+        data_tests: [unique, not_null]
+      - name: email
+        data_tests: [unique, not_null]
+      - name: account_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_account')
+                field: account_id
+  - name: fct_engagement
+    columns:
+      - name: event_id
+        data_tests: [unique, not_null]
+      - name: contact_id
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_contact')
+                field: contact_id
