@@ -14,7 +14,7 @@ personalized outbound emails with an **LLM API**, with dashboards on top.
 
 | Week | Scope | Status |
 | --- | --- | --- |
-| 1 | Repo, synthetic data with planted errors, DuckDB raw load, Clay export, mock enricher | Done |
+| 1 | Repo, synthetic data with planted errors, DuckDB raw load, Clay enrichment (100 real companies), mock enricher | Done |
 | 2 | dbt staging and marts, dedup, conflict resolution, validation checks | Planned |
 | 3 | Scoring and tiers, Attio API sync | Planned |
 | 4 | LLM drafting and evaluation, dashboards, Airflow DAG | Planned |
@@ -38,6 +38,28 @@ make test
 ```
 
 Then follow [docs/clay_setup.md](docs/clay_setup.md) to enrich the real accounts in Clay.
+
+## Clay enrichment
+
+100 real companies were enriched in Clay (two 50-row tables on the free plan) with the
+**Enrich company** action, keyed on domain, at 0.5 credits per row. Results were
+exported as CSV and loaded into `raw.raw_clay_enrichment` by `make clay-load`.
+
+![Enriched Clay table](docs/img/clay_enriched_table.png)
+
+| Enrichment setup (keyed on Domain, auto-run off) | Output fields |
+| --- | --- |
+| ![Enrichment setup](docs/img/clay_enrichment_setup.png) | ![Output fields](docs/img/clay_fields.png) |
+
+What the real enrichment surfaced, before any cleaning:
+
+- 100 of 100 companies matched back to the seed accounts by domain.
+- Country disagrees with the seed for 3 companies (Snowflake, Collibra, JetBrains).
+- 70 of 100 came back with the broad label "Software Development", so a mapping
+  layer is needed to get useful industry segments.
+- Founded year is missing for 26 of 100.
+- `chime.com` resolved to "Chime Workplace" with 14 employees, a likely wrong-entity
+  match that a sanity check on headcount vs. size band should flag.
 
 ## What Week 1 produces
 
