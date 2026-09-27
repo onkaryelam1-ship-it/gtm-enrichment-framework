@@ -1,7 +1,7 @@
 # Clay setup (about 20 minutes)
 
-Clay's free plan gives 100 data credits a month and 200 rows per table, with no
-HTTP API or webhooks. So data moves in and out of Clay as CSV files. This is the
+Clay's free plan gives 100 data credits a month, shows only 50 rows per table,
+and has no HTTP API or webhooks. So data moves in and out of Clay as CSV files. This is the
 one step you do by hand in the Clay UI.
 
 Menu names in Clay change from time to time. If a label below doesn't match what
@@ -13,8 +13,9 @@ you see, look for the closest equivalent.
 make seed load clay-export
 ```
 
-This writes `data/clay_imports/accounts_for_clay_batch_01.csv` (100 real companies)
-and `..._batch_02.csv` (18 more). Start with batch 01.
+This writes three files of up to 50 rows each (`accounts_for_clay_batch_01.csv`,
+`_02`, `_03`). Import each one as its own Clay table, because the free plan only
+shows 50 rows per table.
 
 ## 2. Build the Clay table
 
@@ -45,7 +46,7 @@ and `..._batch_02.csv` (18 more). Start with batch 01.
 make clay-load
 ```
 
-You should see a `clay` provider line with around 100 accounts next to the `mock`
+You should see a `clay` provider line with the accounts you enriched next to the `mock`
 line with 382. If you see "columns not found", fix `clay.column_map`.
 
 ## 4. Screenshots for the README
@@ -60,8 +61,9 @@ Take two screenshots and save them in `docs/img/`:
 | Item | Rows | Notes |
 | --- | --- | --- |
 | 5-row test | 5 | confirm cost per row |
-| Batch 01 | up to 100 | limited by monthly credits |
-| Batch 02 | 18 | next month, or skip; the mock enricher covers it |
+| Batch 01 | 50 | 25 credits at 0.5 per row |
+| Batch 02 | 50 | 25 credits |
+| Batch 03 | 18 | 9 credits |
 
 Anything you can't enrich in Clay is covered by `src/clay/mock_enricher.py`, which
 writes the same columns. In the README and in interviews, describe it as:

@@ -30,9 +30,9 @@ error_injection:
   orphan_contacts: 0.01
 
 clay:
-  # Clay free plan: 100 data credits / month, 200 rows per table.
+  # Clay free plan: 100 data credits / month; tables show only 50 rows without upgrading.
   # Keep each import file under this size.
-  batch_size: 100
+  batch_size: 50
   # Map your Clay export column names -> our standard enrichment fields.
   # Edit the left-hand side to match the column names in your Clay table.
   column_map:
