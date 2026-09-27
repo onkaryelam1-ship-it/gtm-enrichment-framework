@@ -17,7 +17,7 @@ import pandas as pd
 
 from src.config import load_settings, path
 
-FIELDS = ["industry", "employee_count", "hq_country", "founded_year"]
+FIELDS = ["industry", "employee_count", "hq_country", "founded_year", "size_band", "description"]
 
 
 def normalize_domain(d: str | float) -> str | None:
@@ -45,6 +45,7 @@ def read_export(f, column_map: dict) -> pd.DataFrame:
     df["domain_norm"] = df["domain"].map(normalize_domain)
     keep = ["domain_norm", "provider", "source_file", "enriched_at"] + [c for c in FIELDS if c in df.columns]
     return df[keep]
+
 
 
 def main() -> int:

@@ -39,5 +39,7 @@ clay:
     Domain: domain
     Industry: industry
     Employee Count: employee_count
-    Headquarters Country: hq_country
-    Founded Year: founded_year
+    Country: hq_country
+    Founded: founded_year
+    Size: size_band
+    Description: description

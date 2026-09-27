@@ -59,7 +59,8 @@ def main() -> int:
             headcount = None
         age_days = rng.randint(100, 240) if rng.random() < 0.05 else rng.randint(0, 30)
         values = [t.domain, industry, headcount, t.hq_country, t.founded_year]
-        row = dict(zip(cols, values))
+        row = {c: None for c in cols}  # size/description stay blank for synthetic accounts
+        row.update(zip(cols, values))
         row["Enriched At"] = (today - timedelta(days=age_days)).isoformat()
         rows.append(row)
 
