@@ -15,6 +15,7 @@ data/clay_imports/*.csv
 data/clay_exports/*.csv
 data/warehouse/*.duckdb
 data/warehouse/*.wal
+data/attio_payloads/
 
 # dbt
 dbt/target/

@@ -1,0 +1,23 @@
+version: 2
+
+models:
+  - name: fct_prospect_scores
+    description: Priority score, tier and stage for every clean contact.
+    columns:
+      - name: contact_id
+        data_tests: [unique, not_null]
+      - name: tier
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["A", "B", "C"]
+      - name: stage
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ["New", "Engaged", "Replied", "Meeting booked"]
+  - name: int_account_fit
+    columns:
+      - name: account_id
+        data_tests: [unique, not_null]

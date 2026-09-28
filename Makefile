@@ -1,6 +1,6 @@
 PY ?= python3
 
-.PHONY: help setup seed load clay-export mock-enrich clay-load week1 transform dq-report week2 all docs test lint clean
+.PHONY: help setup seed load clay-export mock-enrich clay-load week1 transform dq-report week2 week3 attio-dry-run attio-smoke attio-sync attio-verify all docs test lint clean
 
 help:
 	@echo "make setup        install Python dependencies"
@@ -13,7 +13,11 @@ help:
 	@echo "make transform    dbt build: seeds, staging, dedup, marts, quality checks, tests"
 	@echo "make dq-report    write docs/dq_report.md (planted vs caught, all checks)"
 	@echo "make week2        transform + dq-report"
-	@echo "make all          week1 + week2"
+	@echo "make week3        rebuild scores and tiers (dbt) + dry-run the Attio sync"
+	@echo "make attio-smoke  sync 3 companies + 1 contact each to Attio (needs ATTIO_API_KEY)"
+	@echo "make attio-sync   full sync to Attio (safe to rerun: unchanged records are skipped)"
+	@echo "make attio-verify check Attio for missing or duplicate records"
+	@echo "make all          week1 + week2 + week3"
 	@echo "make docs         open dbt docs (lineage graph) at http://localhost:8080"
 	@echo "make test         run pytest"
 	@echo "make lint         run ruff"
@@ -49,7 +53,21 @@ dq-report:
 
 week2: transform dq-report
 
-all: week1 week2
+attio-dry-run:
+	$(PY) -m src.attio.sync --dry-run
+
+attio-smoke:
+	$(PY) -m src.attio.sync --smoke
+
+attio-sync:
+	$(PY) -m src.attio.sync
+
+attio-verify:
+	$(PY) -m src.attio.sync --verify
+
+week3: transform attio-dry-run
+
+all: week1 week2 week3
 
 docs:
 	$(DBT) docs generate $(DBT_ARGS) && $(DBT) docs serve $(DBT_ARGS)

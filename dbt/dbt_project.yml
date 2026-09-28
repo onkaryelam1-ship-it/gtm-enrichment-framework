@@ -16,6 +16,19 @@ vars:
   stale_contact_days: 365       # contact record not updated in a year
   stale_enrichment_days: 90     # enrichment older than a quarter gets re-enriched
 
+  # --- Week 3: prioritization -------------------------------------------------
+  # priority = fit * w_fit + role * w_role + engagement * w_engagement + intent * w_intent
+  # Change a weight or threshold here, rerun `make week3`, and compare tier sizes.
+  w_fit: 0.40
+  w_role: 0.25
+  w_engagement: 0.20
+  w_intent: 0.15
+  tier_a_min: 62
+  tier_b_min: 50
+  icp_industries: ["Data & Analytics", "Software", "Developer Tools", "Sales Tech", "Marketing Tech"]
+  adjacent_industries: ["Fintech", "Healthcare", "HR Tech", "Cybersecurity", "E-commerce & Retail"]
+  engagement_half_life_days: 30
+
 models:
   gtm_enrichment:
     staging:

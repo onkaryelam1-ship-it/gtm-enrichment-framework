@@ -45,6 +45,26 @@ AI coding tools helped or got something wrong. These make strong interview stori
 - **Recall measured, not assumed.** Every planted error is joined back to the checks,
   and a dbt test fails the build if a rule-based check misses one.
 
+## Week 3
+
+- **Scoring in SQL, weights as config.** The score is a dbt model, so it is versioned,
+  tested (range and weight-sum tests) and visible in lineage. Weights and thresholds
+  are dbt vars: tuning is a one-line change.
+- **Thresholds set from the distribution.** With the first engagement settings only
+  23 contacts (1%) reached tier A because engagement barely moved the score. Raised
+  event points and lengthened the half-life from 14 to 30 days, then set A at 62 and
+  B at 50 to get roughly 8% / 29% / 63%.
+- **Match on our own IDs, not on email or domain.** `gtm_account_id` and
+  `gtm_contact_id` are unique attributes in Attio and the upsert key. Emails and
+  domains change and can collide; an external ID never does.
+- **Skip unchanged records.** Payload hashes make reruns cost nothing and make the
+  "no duplicates on rerun" claim testable.
+- **List membership follows the tier.** Only tier A and B go in the Prospects list;
+  a contact that falls to C is removed, so the list is always the current working set.
+- **Fake API for tests.** The real API can't be called from CI, so tests use an
+  in-memory fake that enforces the behaviours the sync relies on (unique-attribute
+  matching, list entries by parent, validation errors).
+
 ## AI tooling notes
 
 - _Add examples here: what Claude Code or Cursor produced, what you checked, and

@@ -16,7 +16,7 @@ personalized outbound emails with an **LLM API**, with dashboards on top.
 | --- | --- | --- |
 | 1 | Repo, synthetic data with planted errors, DuckDB raw load, Clay enrichment (100 real companies), mock enricher | Done |
 | 2 | dbt staging and marts, dedup, conflict resolution, 16 validation checks, planted-vs-caught report | Done |
-| 3 | Scoring and tiers, Attio API sync | Planned |
+| 3 | Priority scoring and A/B/C tiers, idempotent Attio API sync | Done |
 | 4 | LLM drafting and evaluation, dashboards, Airflow DAG | Planned |
 
 ## Architecture
@@ -33,7 +33,8 @@ generate (Python, Faker) -> raw (DuckDB) -> enrich (Clay CSV / mock) -> dbt stag
 python3 -m venv .venv && source .venv/bin/activate
 make setup
 cp .env.example .env       # add keys later (Attio, Gemini)
-make all                   # week1 (data + enrichment) and week2 (dbt build + DQ report)
+make all                   # week1-3: data, enrichment, dbt build, DQ report, scores, Attio dry run
+make attio-smoke           # then attio-sync, once ATTIO_API_KEY is in .env
 make test
 ```
 
@@ -102,6 +103,53 @@ Checks are enforced in dbt: schema tests on every mart, plus singular tests that
 the build if any rule-based check misses a planted error or if a quarantined record
 reaches `dim_contact`.
 
+## Week 3: prioritize and sync to Attio
+
+### Scoring (`dbt/models/marts/fct_prospect_scores.sql`)
+
+Every clean contact gets a 0-100 priority score from four parts. Weights and tier
+thresholds are dbt vars in `dbt/dbt_project.yml`, so changing them is one edit and
+one rerun.
+
+| Part | Weight | Built from |
+| --- | --- | --- |
+| Fit | 40% | industry in ICP (100) / adjacent (60) / other (20), headcount band, country |
+| Role | 25% | seniority x department: Data and RevOps leaders score highest |
+| Engagement | 20% | meetings, replies, visits, opens, each halving in value every 30 days |
+| Intent | 15% | simulated signals: hiring for data roles, funded in the last 12 months, tech match |
+
+| Tier | Rule | Contacts | Share |
+| --- | --- | --- | --- |
+| A | priority 62 and up | 163 | 8.5% |
+| B | 50 to 61.9 | 551 | 28.7% |
+| C | below 50 | 1,207 | 62.8% |
+
+Each contact also gets a stage from its engagement (New, Engaged, Replied, Meeting
+booked) and a segment (tier + persona, e.g. "A / Data/RevOps leader").
+
+### Attio sync (`src/attio/`)
+
+| Step | What it does |
+| --- | --- |
+| Schema | creates `gtm_` custom attributes on Companies and People and a "GTM Prospects" list, only if missing |
+| Companies | upserts 500 companies keyed on `gtm_account_id`, with fit score, industry, enrichment source, DQ flags |
+| People | upserts 1,921 people keyed on `gtm_contact_id`, linked to their company, with score, tier, persona |
+| Prospects list | adds tier A and B contacts with stage, tier, score and segment; removes contacts that drop to C |
+
+- **Idempotent.** Upserts match on external IDs held in unique attributes, and every
+  payload is hashed. A second run sends zero writes; `make attio-verify` confirms one
+  Attio record per ID.
+- **Rate limits.** Writes are paced under Attio's 25/second, 429s wait for
+  `Retry-After`, 5xx errors back off exponentially.
+- **Bad values don't stop the run.** If Attio rejects a value (for example a reserved
+  `.example` domain), that record is retried without it and the drop is logged.
+- **Inspectable.** Sync state lives in the warehouse: `attio.record_map`,
+  `attio.sync_runs`, `attio.sync_errors`.
+- **Tested without the network.** `tests/test_week3.py` runs the full sync against an
+  in-memory fake of the Attio API, including reruns, tier changes and rejected values.
+
+See [docs/attio_setup.md](docs/attio_setup.md) to connect your own workspace.
+
 ## What Week 1 produces
 
 | Output | Rows | Notes |
@@ -136,7 +184,8 @@ config/settings.yaml     seeds, sizes, error rates, Clay column mapping
 src/generate/            synthetic data + error injection
 src/load/                raw loads into DuckDB
 src/clay/                Clay export, mock enricher, Clay export loader
-src/attio/  src/scoring/  src/llm/   (weeks 3 and 4)
+src/attio/               Attio client, schema setup, idempotent sync
+src/llm/                 (week 4)
 dbt/                     staging, intermediate, marts, quality models + tests
 src/validation/          data-quality report generator
 tests/                   pytest

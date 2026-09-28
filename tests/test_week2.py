@@ -1,46 +1,20 @@
 """Week 2 tests: the full pipeline builds, the rule-based checks catch every planted
 error, and the clean marts contain nothing that should have been quarantined.
 
-Runs against a throwaway warehouse (GTM_WAREHOUSE) so it never touches your real one.
+Runs against a throwaway warehouse built once in conftest.py.
 """
 
 from __future__ import annotations
 
-import os
-import subprocess
-
 import duckdb
 import pytest
 
-from src.clay import load_clay_export, mock_enricher
-from src.config import ROOT
-from src.generate import generate
-from src.load import load_raw
-
 
 @pytest.fixture(scope="module")
-def warehouse(tmp_path_factory):
-    db = tmp_path_factory.mktemp("wh") / "test.duckdb"
-    old = os.environ.get("GTM_WAREHOUSE")
-    os.environ["GTM_WAREHOUSE"] = str(db)
-    try:
-        generate.main()
-        load_raw.main()
-        mock_enricher.main()
-        load_clay_export.main()
-        result = subprocess.run(
-            ["dbt", "build", "--full-refresh", "--project-dir", "dbt", "--profiles-dir", "dbt"],
-            cwd=ROOT, capture_output=True, text=True, check=False,
-        )
-        assert result.returncode == 0, result.stdout[-3000:]
-        con = duckdb.connect(str(db), read_only=True)
-        yield con
-        con.close()
-    finally:
-        if old is None:
-            os.environ.pop("GTM_WAREHOUSE", None)
-        else:
-            os.environ["GTM_WAREHOUSE"] = old
+def warehouse(built_warehouse):
+    con = duckdb.connect(str(built_warehouse), read_only=True)
+    yield con
+    con.close()
 
 
 def one(con, sql):

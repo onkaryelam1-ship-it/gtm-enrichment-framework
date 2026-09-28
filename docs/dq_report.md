@@ -1,6 +1,6 @@
 # Data-quality report
 
-_Generated 2026-09-27 22:44 UTC by `make week2`. Simulated data._
+_Generated 2026-09-28 00:35 UTC by `make week2`. Simulated data._
 
 ## Headline
 
@@ -29,10 +29,10 @@ _Generated 2026-09-27 22:44 UTC by `make week2`. Simulated data._
 
 | Check | Entity | Severity | Action | Tested | Failed | Pass % |
 | --- | --- | --- | --- | --- | --- | --- |
-| duplicate_contact | contact | warn | merge | 2101 | 100 | 95.2 |
 | missing_title | contact | warn | flag | 2101 | 100 | 95.2 |
-| stale_contact | contact | warn | refresh | 2101 | 60 | 97.1 |
+| duplicate_contact | contact | warn | merge | 2101 | 100 | 95.2 |
 | invalid_email | contact | error | quarantine | 2101 | 60 | 97.1 |
+| stale_contact | contact | warn | refresh | 2101 | 60 | 97.1 |
 | orphan_contact | contact | error | quarantine | 2101 | 20 | 99.0 |
 | possible_duplicate | contact | - | - | 2101 | 0 | 100.0 |
 | unmapped_title | contact | - | - | 2101 | 0 | 100.0 |
