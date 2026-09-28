@@ -44,3 +44,10 @@ clay:
     Size: size_band
     Description: description
     Enrich company: matched_name
+
+attio:
+  # Attio rejects the reserved .test email domain our synthetic contacts use.
+  # "example_com" sends jane.doe@acme.test as jane.doe+acme@example.com instead:
+  # still reserved (RFC 2606), never deliverable, but a valid address Attio accepts.
+  # Set to "as_is" to send the original address.
+  email_rewrite: example_com

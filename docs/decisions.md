@@ -62,6 +62,10 @@ AI coding tools helped or got something wrong. These make strong interview stori
   custom attribute. The sync now detects that and switches to find-then-upsert
   (look up by external ID, then PATCH or POST). Tests run both modes, plus a test
   that wipes the local sync state and confirms no duplicates are created.
+- **Emails Attio will accept.** Attio rejected the reserved `.test` addresses. The
+  sync sends `jane.doe+acme@example.com` instead: example.com is also reserved and
+  never delivers, but it's a valid address, stays unique per contact (checked: 1,921
+  of 1,921), and keeps the source company visible. Configurable in settings.yaml.
 - **Skip unchanged records.** Payload hashes make reruns cost nothing and make the
   "no duplicates on rerun" claim testable.
 - **List membership follows the tier.** Only tier A and B go in the Prospects list;

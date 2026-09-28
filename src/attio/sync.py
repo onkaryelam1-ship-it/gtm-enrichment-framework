@@ -31,7 +31,7 @@ from dotenv import load_dotenv
 
 from src.attio.client import AttioClient, AttioError
 from src.attio.schema import LIST_SLUG, ensure_schema
-from src.config import ROOT, path
+from src.config import ROOT, load_settings, path
 
 # Values Attio may reject for simulated data (reserved .example / .test domains).
 # If a write fails validation on one of these, it is retried once without it.
@@ -77,7 +77,15 @@ def company_values(row: dict) -> dict:
     })
 
 
-def person_values(row: dict, company_record_id: str | None) -> dict:
+def attio_email(email: str, mode: str = "example_com") -> str:
+    """jane.doe@acme.test -> jane.doe+acme@example.com (reserved, never deliverable)."""
+    if mode != "example_com" or not email.endswith(".test"):
+        return email
+    local, domain = email.split("@", 1)
+    return f"{local}+{domain.removesuffix('.test')}@example.com"
+
+
+def person_values(row: dict, company_record_id: str | None, email_mode: str = "example_com") -> dict:
     return _clean({
         "gtm_contact_id": row["contact_id"],
         "name": [{
@@ -85,7 +93,7 @@ def person_values(row: dict, company_record_id: str | None) -> dict:
             "last_name": row["last_name"],
             "full_name": row["full_name"],
         }],
-        "email_addresses": [row["email"]],
+        "email_addresses": [attio_email(row["email"], email_mode)],
         "job_title": row.get("title"),
         "company": [{"target_object": "companies", "target_record_id": company_record_id}]
         if company_record_id else None,
@@ -277,6 +285,7 @@ def load_rows(con, limit: int | None, smoke: bool):
 def sync(client, con, *, limit=None, smoke=False, force=False, persist=True,
          unique_ids=None, log=print) -> dict:
     unique_ids = unique_ids or {"companies": True, "people": True}
+    email_mode = (load_settings().get("attio") or {}).get("email_rewrite", "example_com")
     run_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     state = State(con, persist=persist)
     accounts, people = load_rows(con, limit, smoke)
@@ -307,7 +316,7 @@ def sync(client, con, *, limit=None, smoke=False, force=False, persist=True,
     s = Stats()
     for row in people:
         company_id, _ = state.get("company", row["account_id"])
-        values = person_values(row, company_id)
+        values = person_values(row, company_id, email_mode)
         h = payload_hash(values)
         prev_id, prev_h = state.get("person", row["contact_id"])
         if prev_id and prev_h == h and not force:

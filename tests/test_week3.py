@@ -332,3 +332,9 @@ def test_dry_run_writes_payloads_without_network(built_warehouse, monkeypatch, t
     monkeypatch.delenv("ATTIO_API_KEY", raising=False)
     result = attio_sync.main(["--dry-run", "--limit", "5"])
     assert result["results"]["companies"].created == 5
+
+
+def test_email_rewrite_keeps_addresses_unique_and_undeliverable():
+    assert attio_sync.attio_email("jane.doe@acme.test") == "jane.doe+acme@example.com"
+    assert attio_sync.attio_email("jane.doe@acme.test", "as_is") == "jane.doe@acme.test"
+    assert attio_sync.attio_email("real@company.com") == "real@company.com"
