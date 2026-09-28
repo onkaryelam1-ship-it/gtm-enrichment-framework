@@ -188,14 +188,14 @@ class DryRun:
 # sync
 # ---------------------------------------------------------------------------
 
-def _assert(client, path, params, values, stats, entity, local_id, id_key, log):
-    """PUT with one retry that drops a value Attio rejected (e.g. a reserved domain)."""
+def _write(client, method, path, params, values, stats, entity, local_id, log):
+    """Send one record write, retrying once without a value Attio rejected
+    (e.g. a reserved .example domain). Returns the response or None."""
     body = {"data": {"values": dict(values)}}
     for attempt in range(2):
         try:
             stats.sent += 1
-            resp = client.request("PUT", path, params=params, json=body)
-            return resp["data"]["id"][id_key], resp["data"].get("web_url")
+            return client.request(method, path, params=params, json=body)
         except AttioError as e:
             droppable = [k for k, word in DROPPABLE.items()
                          if k in body["data"]["values"] and (k in e.message or word in e.message.lower())]
@@ -205,10 +205,52 @@ def _assert(client, path, params, values, stats, entity, local_id, id_key, log):
                 stats.dropped_values += len(droppable)
                 log(f"  ! {entity} {local_id}: Attio rejected {droppable}, retrying without it")
                 continue
+            if e.status == 404:
+                raise
             stats.failed += 1
             stats.errors.append((entity, local_id, e.status, e.message[:500]))
-            return None, None
-    return None, None
+            return None
+    return None
+
+
+def _find(client, obj, key, value):
+    """Look up a record by our external id (used when the id attribute isn't unique)."""
+    data = client.request("POST", f"/objects/{obj}/records/query",
+                          json={"filter": {key: value}, "limit": 1})["data"]
+    return data[0]["id"]["record_id"] if data else None
+
+
+def _upsert(client, obj, key, values, prev_id, unique, stats, entity, local_id, log):
+    """Create or update one record. Returns (record_id, web_url, was_created).
+
+    unique=True : PUT "assert" matched on the external id attribute (one call).
+    unique=False: update the known record id; otherwise find by external id, then
+                  update it or create it. Still one Attio record per external id.
+    """
+    if unique:
+        resp = _write(client, "PUT", f"/objects/{obj}/records", {"matching_attribute": key},
+                      values, stats, entity, local_id, log)
+        if not resp:
+            return None, None, False
+        return resp["data"]["id"]["record_id"], resp["data"].get("web_url"), prev_id is None
+
+    rid = prev_id
+    if rid:
+        try:
+            resp = _write(client, "PATCH", f"/objects/{obj}/records/{rid}", None,
+                          values, stats, entity, local_id, log)
+            return (rid, resp["data"].get("web_url"), False) if resp else (None, None, False)
+        except AttioError:          # 404: deleted in Attio since the last sync
+            rid = None
+    rid = _find(client, obj, key, values[key])
+    if rid:
+        resp = _write(client, "PATCH", f"/objects/{obj}/records/{rid}", None,
+                      values, stats, entity, local_id, log)
+        return (rid, resp["data"].get("web_url"), False) if resp else (None, None, False)
+    resp = _write(client, "POST", f"/objects/{obj}/records", None, values, stats, entity, local_id, log)
+    if not resp:
+        return None, None, False
+    return resp["data"]["id"]["record_id"], resp["data"].get("web_url"), True
 
 
 def load_rows(con, limit: int | None, smoke: bool):
@@ -232,7 +274,9 @@ def load_rows(con, limit: int | None, smoke: bool):
     return accounts.to_dict("records"), people.to_dict("records")
 
 
-def sync(client, con, *, limit=None, smoke=False, force=False, persist=True, log=print) -> dict:
+def sync(client, con, *, limit=None, smoke=False, force=False, persist=True,
+         unique_ids=None, log=print) -> dict:
+    unique_ids = unique_ids or {"companies": True, "people": True}
     run_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     state = State(con, persist=persist)
     accounts, people = load_rows(con, limit, smoke)
@@ -248,12 +292,11 @@ def sync(client, con, *, limit=None, smoke=False, force=False, persist=True, log
         if prev_id and prev_h == h and not force:
             s.unchanged += 1
             continue
-        rid, url = _assert(client, "/objects/companies/records",
-                           {"matching_attribute": "gtm_account_id"}, values, s,
-                           "company", row["account_id"], "record_id", log)
+        rid, url, created = _upsert(client, "companies", "gtm_account_id", values, prev_id,
+                                    unique_ids["companies"], s, "company", row["account_id"], log)
         if rid:
-            s.updated += bool(prev_id)
-            s.created += not prev_id
+            s.created += created
+            s.updated += not created
             state.put("company", row["account_id"], rid, h)
             if url and len(links) < 3:
                 links.append(url)
@@ -270,12 +313,11 @@ def sync(client, con, *, limit=None, smoke=False, force=False, persist=True, log
         if prev_id and prev_h == h and not force:
             s.unchanged += 1
             continue
-        rid, url = _assert(client, "/objects/people/records",
-                           {"matching_attribute": "gtm_contact_id"}, values, s,
-                           "person", row["contact_id"], "record_id", log)
+        rid, url, created = _upsert(client, "people", "gtm_contact_id", values, prev_id,
+                                    unique_ids["people"], s, "person", row["contact_id"], log)
         if rid:
-            s.updated += bool(prev_id)
-            s.created += not prev_id
+            s.created += created
+            s.updated += not created
             state.put("person", row["contact_id"], rid, h)
             if url and len(links) < 6:
                 links.append(url)
@@ -393,9 +435,9 @@ def main(argv=None) -> dict:
         client = AttioClient(os.environ.get("ATTIO_API_KEY", "").strip())
         if args.verify:
             return verify(client, con)
-        if not args.skip_schema:
-            ensure_schema(client)
-        result = sync(client, con, limit=args.limit, smoke=args.smoke, force=args.force)
+        unique_ids = ensure_schema(client, create=not args.skip_schema)
+        result = sync(client, con, limit=args.limit, smoke=args.smoke, force=args.force,
+                      unique_ids=unique_ids)
         print(f"Done in {client.calls} API calls. Run id {result['run_id']}.")
         return result
     finally:

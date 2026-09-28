@@ -9,6 +9,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from src.attio.client import AttioError
+
 INDUSTRIES = [
     "Software", "Data & Analytics", "Cybersecurity", "Fintech", "Healthcare",
     "Marketing Tech", "Sales Tech", "HR Tech", "E-commerce & Retail", "Logistics",
@@ -61,21 +63,37 @@ LIST_ATTRS = [
 ]
 
 
-def _ensure_attrs(client, target: str, identifier: str, attrs: list[Attr], log) -> None:
-    existing = {a["api_slug"] for a in client.request(
+def _create_attr(client, target, identifier, a: Attr, unique: bool) -> None:
+    client.request("POST", f"/{target}/{identifier}/attributes", json={"data": {
+        "title": a.title,
+        "description": a.description or None,
+        "api_slug": a.slug,
+        "type": a.type,
+        "is_required": False,
+        "is_unique": unique,
+        "is_multiselect": False,
+        "config": {},
+    }})
+
+
+def _ensure_attrs(client, target: str, identifier: str, attrs: list[Attr], log) -> dict:
+    """Create missing attributes and options. Returns {slug: is_unique} for all attrs."""
+    existing = {a["api_slug"]: bool(a.get("is_unique")) for a in client.request(
         "GET", f"/{target}/{identifier}/attributes")["data"]}
     for a in attrs:
         if a.slug not in existing:
-            client.request("POST", f"/{target}/{identifier}/attributes", json={"data": {
-                "title": a.title,
-                "description": a.description or None,
-                "api_slug": a.slug,
-                "type": a.type,
-                "is_required": False,
-                "is_unique": a.unique,
-                "is_multiselect": False,
-                "config": {},
-            }})
+            try:
+                _create_attr(client, target, identifier, a, a.unique)
+                existing[a.slug] = a.unique
+            except AttioError as e:
+                # Some workspaces don't allow unique custom attributes via the API.
+                # Fall back to a normal attribute; the sync then finds records by
+                # this id before creating, so there is still one record per id.
+                if not (a.unique and e.status == 400 and "unique" in e.message.lower()):
+                    raise
+                _create_attr(client, target, identifier, a, False)
+                existing[a.slug] = False
+                log(f"  note: {identifier}.{a.slug} can't be unique here; using find-then-upsert")
             log(f"  created attribute {identifier}.{a.slug}")
         if a.options:
             path = f"/{target}/{identifier}/attributes/{a.slug}/options"
@@ -85,12 +103,20 @@ def _ensure_attrs(client, target: str, identifier: str, attrs: list[Attr], log) 
                     client.request("POST", path, json={"data": {"title": opt}})
             if set(a.options) - have:
                 log(f"  added {len(set(a.options) - have)} option(s) to {identifier}.{a.slug}")
+    return existing
 
 
-def ensure_schema(client, log=print) -> None:
+def ensure_schema(client, log=print, create: bool = True) -> dict:
+    """Create whatever is missing. Returns whether each object's GTM id is unique:
+    {"companies": bool, "people": bool}. With create=False, only reads."""
+    if not create:
+        read = lambda obj: {a["api_slug"]: bool(a.get("is_unique")) for a in
+                            client.request("GET", f"/objects/{obj}/attributes")["data"]}
+        return {"companies": read("companies").get("gtm_account_id", False),
+                "people": read("people").get("gtm_contact_id", False)}
     log("Checking Attio schema...")
-    _ensure_attrs(client, "objects", "companies", COMPANY_ATTRS, log)
-    _ensure_attrs(client, "objects", "people", PEOPLE_ATTRS, log)
+    companies = _ensure_attrs(client, "objects", "companies", COMPANY_ATTRS, log)
+    people = _ensure_attrs(client, "objects", "people", PEOPLE_ATTRS, log)
     lists = {x["api_slug"] for x in client.request("GET", "/lists")["data"]}
     if LIST_SLUG not in lists:
         client.request("POST", "/lists", json={"data": {
@@ -102,4 +128,6 @@ def ensure_schema(client, log=print) -> None:
         }})
         log(f"  created list {LIST_SLUG}")
     _ensure_attrs(client, "lists", LIST_SLUG, LIST_ATTRS, log)
-    log("Schema ready.")
+    unique = {"companies": companies["gtm_account_id"], "people": people["gtm_contact_id"]}
+    log(f"Schema ready. Match mode: {'unique-id upsert' if all(unique.values()) else 'find-then-upsert'}.")
+    return unique

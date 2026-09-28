@@ -23,7 +23,8 @@ class FakeAttio:
     """Just enough of the Attio v2 API for the sync: attributes, options, lists,
     asserting records on a unique attribute, list entries, and record queries."""
 
-    def __init__(self, reject_domain_suffix: str | None = None):
+    def __init__(self, reject_domain_suffix: str | None = None, allow_unique: bool = True):
+        self.allow_unique = allow_unique
         self.attrs = {"objects/companies": {}, "objects/people": {}}
         self.lists = {}
         self.records = {"companies": {}, "people": {}}
@@ -44,10 +45,13 @@ class FakeAttio:
             attrs = self.attrs.setdefault(key, {})
             if len(parts) == 3:
                 if method == "GET":
-                    return {"data": [{"api_slug": s} for s in attrs]}
+                    return {"data": [{"api_slug": s, "is_unique": a["meta"]["is_unique"]}
+                                     for s, a in attrs.items()]}
                 slug = json["data"]["api_slug"]
                 if slug in attrs:
                     self._err(409, "slug_conflict", method, path)
+                if json["data"]["is_unique"] and not self.allow_unique:
+                    self._err(400, "Cannot set attribute as unique.", method, path)
                 attrs[slug] = {"meta": json["data"], "options": set()}
                 return {"data": {"api_slug": slug}}
             opts = attrs[parts[3]]["options"]
@@ -65,15 +69,28 @@ class FakeAttio:
         if parts[0] == "objects" and parts[2] == "records":
             obj = parts[1]
             if path.endswith("/query"):
-                recs = list(self.records[obj].values())
-                page = recs[json["offset"]: json["offset"] + json["limit"]]
-                return {"data": [{"values": {k: [{"value": v}] for k, v in r["values"].items()}}
-                                 for r in page]}
+                recs = list(self.records[obj].items())
+                for k, v in (json.get("filter") or {}).items():
+                    recs = [(rid, r) for rid, r in recs if r["values"].get(k) == v]
+                off = json.get("offset", 0)
+                page = recs[off: off + json["limit"]]
+                return {"data": [{"id": {"record_id": rid},
+                                  "values": {k: [{"value": v}] for k, v in r["values"].items()}}
+                                 for rid, r in page]}
             values = json["data"]["values"]
             if self.reject_domain_suffix and any(
                     d.endswith(self.reject_domain_suffix) for d in values.get("domains", [])):
                 self._err(400, "Invalid value was passed to attribute with slug \"domains\".",
                           method, path)
+            if method == "PATCH":
+                if parts[3] not in self.records[obj]:
+                    self._err(404, "Record not found", method, path)
+                self.records[obj][parts[3]]["values"].update(values)
+                return {"data": {"id": {"record_id": parts[3]}, "web_url": f"https://fake/{parts[3]}"}}
+            if method == "POST":
+                rid = str(uuid.uuid4())
+                self.records[obj][rid] = {"values": dict(values)}
+                return {"data": {"id": {"record_id": rid}, "web_url": f"https://fake/{rid}"}}
             match = params["matching_attribute"]
             assert self.attrs[f"objects/{obj}"][match]["meta"]["is_unique"], "must match on a unique attr"
             for rid, rec in self.records[obj].items():
@@ -219,10 +236,30 @@ def test_schema_setup_is_idempotent():
     assert LIST_SLUG in fake.lists
 
 
-def test_full_sync_then_rerun_sends_nothing(con):
-    fake = FakeAttio()
-    ensure_schema(fake, log=quiet)
-    first = attio_sync.sync(fake, con, log=quiet)["results"]
+BOTH_MODES = pytest.mark.parametrize("allow_unique", [True, False], ids=["unique-ids", "find-then-upsert"])
+
+
+def _setup(allow_unique=True, **kw):
+    fake = FakeAttio(allow_unique=allow_unique, **kw)
+    unique_ids = ensure_schema(fake, log=quiet)
+    assert all(unique_ids.values()) == allow_unique
+    return fake, unique_ids
+
+
+def test_lost_state_does_not_create_duplicates(con):
+    """If the local sync state is wiped, find-then-upsert still finds existing records."""
+    fake, u = _setup(allow_unique=False)
+    attio_sync.sync(fake, con, limit=5, unique_ids=u, log=quiet)
+    n = len(fake.records["people"])
+    con.execute("delete from attio.record_map")
+    attio_sync.sync(fake, con, limit=5, unique_ids=u, log=quiet)
+    assert len(fake.records["people"]) == n
+
+
+@BOTH_MODES
+def test_full_sync_then_rerun_sends_nothing(con, allow_unique):
+    fake, u = _setup(allow_unique)
+    first = attio_sync.sync(fake, con, unique_ids=u, log=quiet)["results"]
     n_accounts, n_people, n_ab = con.execute("""
         select count(distinct account_id), count(*), count(*) filter (where tier in ('A', 'B'))
         from marts.fct_prospect_scores
@@ -235,35 +272,34 @@ def test_full_sync_then_rerun_sends_nothing(con):
     assert len(fake.entries) == n_ab
 
     writes_before = fake.writes
-    second = attio_sync.sync(fake, con, log=quiet)["results"]
+    second = attio_sync.sync(fake, con, unique_ids=u, log=quiet)["results"]
     assert fake.writes == writes_before                 # nothing resent
     assert second["people"].unchanged == n_people
     assert len(fake.records["people"]) == n_people      # no duplicates
 
 
-def test_forced_rerun_updates_without_duplicating(con):
-    fake = FakeAttio()
-    ensure_schema(fake, log=quiet)
-    attio_sync.sync(fake, con, limit=5, log=quiet)
+@BOTH_MODES
+def test_forced_rerun_updates_without_duplicating(con, allow_unique):
+    fake, u = _setup(allow_unique)
+    attio_sync.sync(fake, con, limit=5, unique_ids=u, log=quiet)
     n = len(fake.records["people"])
-    res = attio_sync.sync(fake, con, limit=5, force=True, log=quiet)["results"]
+    res = attio_sync.sync(fake, con, limit=5, force=True, unique_ids=u, log=quiet)["results"]
     assert res["people"].updated == n and res["people"].created == 0
     assert len(fake.records["people"]) == n
 
 
-def test_people_are_linked_to_their_company(con):
-    fake = FakeAttio()
-    ensure_schema(fake, log=quiet)
-    attio_sync.sync(fake, con, limit=3, log=quiet)
+@BOTH_MODES
+def test_people_are_linked_to_their_company(con, allow_unique):
+    fake, u = _setup(allow_unique)
+    attio_sync.sync(fake, con, limit=3, unique_ids=u, log=quiet)
     company_ids = set(fake.records["companies"])
     for rec in fake.records["people"].values():
         assert rec["values"]["company"][0]["target_record_id"] in company_ids
 
 
 def test_tier_drop_removes_list_entry(con):
-    fake = FakeAttio()
-    ensure_schema(fake, log=quiet)
-    attio_sync.sync(fake, con, limit=20, log=quiet)
+    fake, u = _setup()
+    attio_sync.sync(fake, con, limit=20, unique_ids=u, log=quiet)
     cid = con.execute("""
         select contact_id from marts.fct_prospect_scores
         where tier = 'A' and account_id in (
@@ -274,15 +310,15 @@ def test_tier_drop_removes_list_entry(con):
     """).fetchone()[0]
     before = len(fake.entries)
     con.execute("update marts.fct_prospect_scores set tier = 'C' where contact_id = ?", [cid])
-    res = attio_sync.sync(fake, con, limit=20, log=quiet)["results"]
+    res = attio_sync.sync(fake, con, limit=20, unique_ids=u, log=quiet)["results"]
     assert res["prospect_entries"].removed == 1
     assert len(fake.entries) == before - 1
 
 
-def test_rejected_value_is_dropped_and_logged(con):
-    fake = FakeAttio(reject_domain_suffix=".example")
-    ensure_schema(fake, log=quiet)
-    res = attio_sync.sync(fake, con, log=quiet)["results"]
+@BOTH_MODES
+def test_rejected_value_is_dropped_and_logged(con, allow_unique):
+    fake, u = _setup(allow_unique, reject_domain_suffix=".example")
+    res = attio_sync.sync(fake, con, unique_ids=u, log=quiet)["results"]
     assert res["companies"].failed == 0
     assert res["companies"].dropped_values == con.execute(
         "select count(*) from marts.dim_account where domain like '%.example' "

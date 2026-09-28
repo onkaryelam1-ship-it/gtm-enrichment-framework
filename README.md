@@ -136,9 +136,11 @@ booked) and a segment (tier + persona, e.g. "A / Data/RevOps leader").
 | People | upserts 1,921 people keyed on `gtm_contact_id`, linked to their company, with score, tier, persona |
 | Prospects list | adds tier A and B contacts with stage, tier, score and segment; removes contacts that drop to C |
 
-- **Idempotent.** Upserts match on external IDs held in unique attributes, and every
-  payload is hashed. A second run sends zero writes; `make attio-verify` confirms one
-  Attio record per ID.
+- **Idempotent.** Every record carries our external ID (`gtm_account_id`,
+  `gtm_contact_id`). Where Attio allows unique custom attributes, the sync upserts on
+  that ID in one call; where it doesn't, it finds the record by ID and then updates
+  or creates it. Payloads are hashed, so a second run sends zero writes, and
+  `make attio-verify` confirms one Attio record per ID.
 - **Rate limits.** Writes are paced under Attio's 25/second, 429s wait for
   `Retry-After`, 5xx errors back off exponentially.
 - **Bad values don't stop the run.** If Attio rejects a value (for example a reserved

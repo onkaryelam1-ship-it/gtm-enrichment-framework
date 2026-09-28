@@ -57,6 +57,11 @@ AI coding tools helped or got something wrong. These make strong interview stori
 - **Match on our own IDs, not on email or domain.** `gtm_account_id` and
   `gtm_contact_id` are unique attributes in Attio and the upsert key. Emails and
   domains change and can collide; an external ID never does.
+- **Fallback when unique attributes aren't allowed.** The first real run failed with
+  "Cannot set attribute as unique": this workspace won't let the API create a unique
+  custom attribute. The sync now detects that and switches to find-then-upsert
+  (look up by external ID, then PATCH or POST). Tests run both modes, plus a test
+  that wipes the local sync state and confirms no duplicates are created.
 - **Skip unchanged records.** Payload hashes make reruns cost nothing and make the
   "no duplicates on rerun" claim testable.
 - **List membership follows the tier.** Only tier A and B go in the Prospects list;
