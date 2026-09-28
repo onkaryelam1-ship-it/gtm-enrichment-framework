@@ -150,6 +150,30 @@ booked) and a segment (tier + persona, e.g. "A / Data/RevOps leader").
 - **Tested without the network.** `tests/test_week3.py` runs the full sync against an
   in-memory fake of the Attio API, including reruns, tier changes and rejected values.
 
+### Live sync results
+
+| Run | Companies | People | Prospects list | API writes |
+| --- | --- | --- | --- | --- |
+| First full sync | 500 | 1,921 (all linked to their company) | 714 | 3,509, 0 failed |
+| Rerun | 500 unchanged | 1,921 unchanged | 714 unchanged | 0 |
+| Verify | 500 in Attio, 0 duplicate IDs | 1,921 in Attio, 0 duplicate IDs | | |
+
+Attio rejected the synthetic `.example` domains on 382 companies; those were saved
+without a domain and logged, and the run carried on.
+
+**Companies with pipeline fields** (fit score, resolved industry, enrichment source,
+and data-quality flags such as Chime's `suspected_wrong_entity`):
+
+![Attio companies](docs/img/attio_companies.png)
+
+**GTM Prospects list** (tier A and B, ranked by priority, stage from engagement):
+
+![Attio prospects list](docs/img/attio_prospects.png)
+
+**A synced person** (linked company, list stage, tier, score and segment):
+
+![Attio person record](docs/img/attio_person.png)
+
 See [docs/attio_setup.md](docs/attio_setup.md) to connect your own workspace.
 
 ## What Week 1 produces
